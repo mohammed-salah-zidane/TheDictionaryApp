@@ -48,7 +48,7 @@ public class WordDefinitionRepositoryImpl: WordDefinitionRepository {
     }
     
     public func getCachedDefinition(for word: String) async throws -> WordDefinition? {
-        return try await localDataSource.getCachedDefinition(for: word)
+        try await localDataSource.getCachedDefinition(for: word)
     }
     
     public func cacheDefinition(_ definition: WordDefinition) async throws {
@@ -56,6 +56,6 @@ public class WordDefinitionRepositoryImpl: WordDefinitionRepository {
     }
     
     public func getPastSearches() async throws -> [WordDefinition] {
-        return try await localDataSource.getPastSearches()
+        try await localDataSource.getPastSearches()
     }
 }

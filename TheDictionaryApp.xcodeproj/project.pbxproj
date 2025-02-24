@@ -29,6 +29,7 @@
 		AB9A6BDE2D6C3A8800EE763A /* TheDictionaryAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TheDictionaryAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB9A6C272D6C466D00EE763A /* Domain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Domain; sourceTree = "<group>"; };
 		AB9A6C282D6C475C00EE763A /* Data */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Data; sourceTree = "<group>"; };
+		ABE8F1E42D6C4DAE00D375B1 /* WordFeature */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = WordFeature; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -77,6 +78,7 @@
 		AB9A6BBB2D6C3A8700EE763A = {
 			isa = PBXGroup;
 			children = (
+				ABE8F1E42D6C4DAE00D375B1 /* WordFeature */,
 				AB9A6C282D6C475C00EE763A /* Data */,
 				AB9A6C272D6C466D00EE763A /* Domain */,
 				AB9A6BC62D6C3A8700EE763A /* TheDictionaryApp */,

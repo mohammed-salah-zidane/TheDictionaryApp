@@ -5,7 +5,6 @@
 //  Created by Mohamed Salah on 24/02/2025.
 //
 
-
 import Foundation
 import Network
 
@@ -21,7 +20,7 @@ public class NetworkMonitor: NetworkMonitorProtocol {
     private var _isConnected: Bool = true
     
     public var isConnected: Bool {
-        return _isConnected
+        _isConnected
     }
     
     private init() {
