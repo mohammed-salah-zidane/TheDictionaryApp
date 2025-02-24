@@ -9,7 +9,7 @@
 import Foundation
 
 // Represents the definition for a word.
-public struct WordDefinition: Codable, Equatable {
+public struct WordDefinition: Codable, Equatable, Sendable {
     public let word: String
     public let phonetic: String?
     public let phonetics: [Phonetic]
@@ -25,7 +25,7 @@ public struct WordDefinition: Codable, Equatable {
     }
 }
 
-public struct Phonetic: Codable, Equatable {
+public struct Phonetic: Codable, Equatable, Sendable {
     public let text: String?
     public let audio: String?
     
@@ -35,7 +35,7 @@ public struct Phonetic: Codable, Equatable {
     }
 }
 
-public struct Meaning: Codable, Equatable {
+public struct Meaning: Codable, Equatable, Sendable {
     public let partOfSpeech: String
     public let definitions: [Definition]
     
@@ -45,7 +45,7 @@ public struct Meaning: Codable, Equatable {
     }
 }
 
-public struct Definition: Codable, Equatable {
+public struct Definition: Codable, Equatable, Sendable {
     public let definition: String
     public let example: String?
     public let synonyms: [String]

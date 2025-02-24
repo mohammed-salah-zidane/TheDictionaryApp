@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AB5BB9792D6CF54E00296CB1 /* WordFeature in Resources */ = {isa = PBXBuildFile; fileRef = ABE8F1E42D6C4DAE00D375B1 /* WordFeature */; };
+		AB5BB97A2D6CF54E00296CB1 /* Data in Resources */ = {isa = PBXBuildFile; fileRef = AB9A6C282D6C475C00EE763A /* Data */; };
+		AB5BB97B2D6CF54E00296CB1 /* Domain in Resources */ = {isa = PBXBuildFile; fileRef = AB9A6C272D6C466D00EE763A /* Domain */; };
+		ABE8F1F02D6C4FBF00D375B1 /* Data in Frameworks */ = {isa = PBXBuildFile; productRef = ABE8F1EF2D6C4FBF00D375B1 /* Data */; };
+		ABE8F1F22D6C4FBF00D375B1 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = ABE8F1F12D6C4FBF00D375B1 /* Domain */; };
+		ABE8F1F42D6C4FBF00D375B1 /* WordFeature in Frameworks */ = {isa = PBXBuildFile; productRef = ABE8F1F32D6C4FBF00D375B1 /* WordFeature */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AB9A6BD52D6C3A8800EE763A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -55,6 +64,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABE8F1F22D6C4FBF00D375B1 /* Domain in Frameworks */,
+				ABE8F1F02D6C4FBF00D375B1 /* Data in Frameworks */,
+				ABE8F1F42D6C4FBF00D375B1 /* WordFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +96,7 @@
 				AB9A6BC62D6C3A8700EE763A /* TheDictionaryApp */,
 				AB9A6BD72D6C3A8800EE763A /* TheDictionaryAppTests */,
 				AB9A6BE12D6C3A8800EE763A /* TheDictionaryAppUITests */,
+				ABE8F1E52D6C4F0400D375B1 /* Frameworks */,
 				AB9A6BC52D6C3A8700EE763A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -96,6 +109,13 @@
 				AB9A6BDE2D6C3A8800EE763A /* TheDictionaryAppUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		ABE8F1E52D6C4F0400D375B1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -118,6 +138,9 @@
 			);
 			name = TheDictionaryApp;
 			packageProductDependencies = (
+				ABE8F1EF2D6C4FBF00D375B1 /* Data */,
+				ABE8F1F12D6C4FBF00D375B1 /* Domain */,
+				ABE8F1F32D6C4FBF00D375B1 /* WordFeature */,
 			);
 			productName = TheDictionaryApp;
 			productReference = AB9A6BC42D6C3A8700EE763A /* TheDictionaryApp.app */;
@@ -218,6 +241,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB5BB9792D6CF54E00296CB1 /* WordFeature in Resources */,
+				AB5BB97A2D6CF54E00296CB1 /* Data in Resources */,
+				AB5BB97B2D6CF54E00296CB1 /* Domain in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +436,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -439,6 +466,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -460,7 +488,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7L998UXP4V;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TheDictionaryAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -479,7 +507,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7L998UXP4V;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TheDictionaryAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -497,6 +525,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7L998UXP4V;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TheDictionaryAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -514,6 +543,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7L998UXP4V;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.TheDictionaryAppUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -564,6 +594,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ABE8F1EF2D6C4FBF00D375B1 /* Data */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Data;
+		};
+		ABE8F1F12D6C4FBF00D375B1 /* Domain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Domain;
+		};
+		ABE8F1F32D6C4FBF00D375B1 /* WordFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WordFeature;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AB9A6BBC2D6C3A8700EE763A /* Project object */;
 }

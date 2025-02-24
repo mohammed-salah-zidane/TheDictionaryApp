@@ -9,7 +9,8 @@
 import Foundation
 import Domain
 
-public class WordDefinitionRepositoryImpl: WordDefinitionRepository {
+
+public final class WordDefinitionRepositoryImpl: WordDefinitionRepository {
     private let remoteDataSource: RemoteDataSourceProtocol
     private let localDataSource: LocalDataSourceProtocol
     private let networkMonitor: NetworkMonitorProtocol
@@ -26,19 +27,21 @@ public class WordDefinitionRepositoryImpl: WordDefinitionRepository {
         if networkMonitor.isConnected {
             do {
                 let remoteDefinitions = try await remoteDataSource.fetchDefinition(for: word)
-                if let definition = WordDefinitionMapper.map(apiResponse: remoteDefinitions) {
+                if let definition = remoteDefinitions.first {
                     try await localDataSource.cacheDefinition(definition)
                     return definition
                 } else {
                     throw NSError(domain: "No definition found", code: 0)
                 }
             } catch {
+                // Fallback to cache
                 if let cached = try await localDataSource.getCachedDefinition(for: word) {
                     return cached
                 }
                 throw error
             }
         } else {
+            // Offline fallback
             if let cached = try await localDataSource.getCachedDefinition(for: word) {
                 return cached
             } else {

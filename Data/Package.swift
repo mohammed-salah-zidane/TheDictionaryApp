@@ -5,29 +5,22 @@ import PackageDescription
 
 let package = Package(
     name: "Data",
-    platforms: [
-        .iOS(.v15)
-    ],
+    platforms: [.iOS(.v16)],
     products: [
-        .library(
-            name: "Data",
-            targets: ["Data"]
-        )
+        .library(name: "Data", targets: ["Data"])
     ],
     dependencies: [
-        // External dependency – using the latest Moya release.
-        .package(url: "https://github.com/Moya/Moya.git", from: "15.0.0"),
-        // Local dependency on Domain.
         .package(path: "../Domain")
     ],
     targets: [
         .target(
             name: "Data",
-            dependencies: [
-                "Domain",
-                .product(name: "Moya", package: "Moya")
-            ],
-            path: "Sources/Data"
+            dependencies: ["Domain"],
+            path: "Sources/Data",
+            resources: [
+                // Make sure to process the .xcdatamodeld
+                .process("Local/WordDefinitionModel.xcdatamodeld")
+            ]
         ),
         .testTarget(
             name: "DataTests",

@@ -7,23 +7,28 @@
 
 
 import Foundation
-import Moya
 import Domain
 
-public protocol RemoteDataSourceProtocol {
+public protocol RemoteDataSourceProtocol: Sendable {
     func fetchDefinition(for word: String) async throws -> [WordDefinition]
 }
 
-public class RemoteDataSource: RemoteDataSourceProtocol {
-    private let provider: MoyaProvider<DictionaryAPI>
+public final class RemoteDataSource: RemoteDataSourceProtocol {
+    private let networkClient: NetworkClientProtocol
     
-    public init(provider: MoyaProvider<DictionaryAPI> = MoyaProvider<DictionaryAPI>()) {
-        self.provider = provider
+    public init(networkClient: NetworkClientProtocol = NetworkClient()) {
+        self.networkClient = networkClient
     }
     
     public func fetchDefinition(for word: String) async throws -> [WordDefinition] {
-        let response = try await provider.requestAsync(.fetchDefinition(word: word))
-        let definitions = try JSONDecoder().decode([WordDefinition].self, from: response.data)
-        return definitions
+        // 1) Use our custom endpoint
+        let endpoint = DictionaryEndpoints.fetchDefinition(word: word)
+        
+        // 2) Fetch raw [WordDefinition] directly, or if needed, fetch a "RemoteDictionaryResponse" and map it
+        
+        let response: [WordDefinition] = try await networkClient.request(endpoint)
+        
+        // 3) Return the decoded domain model array
+        return response
     }
 }

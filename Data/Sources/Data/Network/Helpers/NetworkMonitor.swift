@@ -8,11 +8,11 @@
 import Foundation
 import Network
 
-public protocol NetworkMonitorProtocol {
+public protocol NetworkMonitorProtocol: Sendable {
     var isConnected: Bool { get }
 }
 
-public class NetworkMonitor: NetworkMonitorProtocol {
+public final class NetworkMonitor: NetworkMonitorProtocol {
     public static let shared = NetworkMonitor()
     
     private let monitor: NWPathMonitor
@@ -31,3 +31,5 @@ public class NetworkMonitor: NetworkMonitorProtocol {
         monitor.start(queue: queue)
     }
 }
+
+extension NetworkMonitor: @unchecked Sendable {}

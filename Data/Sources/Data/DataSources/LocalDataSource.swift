@@ -5,18 +5,17 @@
 //  Created by Mohamed Salah on 24/02/2025.
 //
 
-
 import Foundation
 import CoreData
 import Domain
 
-public protocol LocalDataSourceProtocol {
+public protocol LocalDataSourceProtocol: Sendable {
     func getCachedDefinition(for word: String) async throws -> WordDefinition?
     func cacheDefinition(_ definition: WordDefinition) async throws
     func getPastSearches() async throws -> [WordDefinition]
 }
 
-public class LocalDataSource: LocalDataSourceProtocol {
+public final class LocalDataSource: LocalDataSourceProtocol {
     private let coreDataStack: CoreDataStack
     
     public init(coreDataStack: CoreDataStack = .shared) {
@@ -29,19 +28,41 @@ public class LocalDataSource: LocalDataSourceProtocol {
         fetchRequest.predicate = NSPredicate(format: "word ==[c] %@", word)
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
         let results = try context.fetch(fetchRequest)
-        if let cached = results.first {
-            let definition = try JSONDecoder().decode(WordDefinition.self, from: cached.jsonData)
-            return definition
+        if let cached = results.first,
+           let data = cached.jsonData {
+            return try JSONDecoder().decode(WordDefinition.self, from: data)
         }
         return nil
     }
     
     public func cacheDefinition(_ definition: WordDefinition) async throws {
         let context = coreDataStack.context
-        let cached = CachedDefinition(context: context)
-        cached.word = definition.word
-        cached.jsonData = try JSONEncoder().encode(definition)
-        cached.timestamp = Date()
+        
+        // First, fetch any existing entries for this word
+        let fetchRequest: NSFetchRequest<CachedDefinition> = CachedDefinition.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "word ==[c] %@", definition.word)
+        let existingEntries = try context.fetch(fetchRequest)
+        
+        let cachedDefinition: CachedDefinition
+        
+        if let existingEntry = existingEntries.first {
+            // Update existing entry
+            cachedDefinition = existingEntry
+            
+            // Delete any additional duplicate entries if they exist
+            if existingEntries.count > 1 {
+                existingEntries.dropFirst().forEach(context.delete)
+            }
+        } else {
+            // Create new entry if none exists
+            cachedDefinition = CachedDefinition(context: context)
+            cachedDefinition.word = definition.word
+        }
+        
+        // Update the cached definition
+        cachedDefinition.jsonData = try JSONEncoder().encode(definition)
+        cachedDefinition.timestamp = Date()
+        
         try await coreDataStack.saveContext()
     }
     
@@ -49,8 +70,14 @@ public class LocalDataSource: LocalDataSourceProtocol {
         let context = coreDataStack.context
         let fetchRequest: NSFetchRequest<CachedDefinition> = CachedDefinition.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+        // Add predicate to ensure we only get entries with valid data
+        fetchRequest.predicate = NSPredicate(format: "jsonData != nil")
+        
         let results = try context.fetch(fetchRequest)
-        let definitions = try results.map { try JSONDecoder().decode(WordDefinition.self, from: $0.jsonData) }
-        return definitions
+        
+        return try results.compactMap { cached -> WordDefinition? in
+            guard let data = cached.jsonData else { return nil }
+            return try JSONDecoder().decode(WordDefinition.self, from: data)
+        }
     }
 }

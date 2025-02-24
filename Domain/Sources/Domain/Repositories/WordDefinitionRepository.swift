@@ -9,7 +9,7 @@
 import Foundation
 
 // Protocol defining methods for fetching and caching word definitions.
-public protocol WordDefinitionRepository {
+public protocol WordDefinitionRepository: Sendable {
     func fetchDefinition(for word: String) async throws -> WordDefinition
     func getCachedDefinition(for word: String) async throws -> WordDefinition?
     func cacheDefinition(_ definition: WordDefinition) async throws
