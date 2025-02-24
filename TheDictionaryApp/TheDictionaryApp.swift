@@ -29,7 +29,7 @@ struct TheDictionaryApp: App {
             let viewModel = WordDefinitionViewModel(
                 fetchDefinitionUseCase: fetchWordDefinitionUseCase,
                 fetchPastSearchesUseCase: pastSearchesUseCase,
-                audioService: audioService
+                audioService: audioService, networkMonitor: NetworkMonitor()
             )
             WordSearchView(viewModel: viewModel)
         }

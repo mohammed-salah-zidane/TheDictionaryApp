@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "WordFeature",
     platforms: [
-        .iOS(.v16)
+        .iOS(.v17)
     ],
     products: [
         .library(
@@ -16,13 +16,15 @@ let package = Package(
     ],
     dependencies: [
         // Local dependency on Domain.
-        .package(path: "../Domain")
+        .package(path: "../Domain"),
+        .package(path: "../Data")
     ],
     targets: [
         .target(
             name: "WordFeature",
             dependencies: [
-                "Domain"
+                "Domain",
+                "Data"    
             ],
             path: "Sources/WordFeature"
         )

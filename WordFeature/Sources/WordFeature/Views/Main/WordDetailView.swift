@@ -94,29 +94,3 @@ struct WordDetailView: View {
         }
     }
 }
-
-private struct TagsSection: View {
-    let title: String
-    let tags: [String]
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            FlowLayout(alignment: .leading, spacing: 8) {
-                ForEach(tags, id: \.self) { tag in
-                    Text(tag)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(color.opacity(0.1))
-                        .cornerRadius(8)
-                }
-            }
-        }
-        .padding(.top, 8)
-    }
-}

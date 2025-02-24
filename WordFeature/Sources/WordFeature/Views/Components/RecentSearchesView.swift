@@ -3,6 +3,7 @@ import Domain
 
 struct RecentSearchesView: View {
     @ObservedObject var viewModel: WordDefinitionViewModel
+    let isOnline: Bool
     
     var body: some View {
         Group {
@@ -10,28 +11,65 @@ struct RecentSearchesView: View {
                 EmptyRecentSearchesView()
             } else {
                 List {
+                    if !isOnline {
+                        offlineHeader
+                    }
+                    
                     ForEach(viewModel.pastSearches, id: \.word) { definition in
-                        RecentSearchCell(definition: definition)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                viewModel.selectPastSearch(definition)
-                                viewModel.showPastSearches = false
-                            }
+                        RecentSearchCell(
+                            definition: definition,
+                            isOnline: isOnline
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            viewModel.selectPastSearch(definition)
+                            viewModel.showPastSearches = false
+                        }
                     }
                 }
                 .listStyle(.plain)
+                .refreshable {
+                    if isOnline {
+                        await viewModel.loadPastSearches()
+                    }
+                }
             }
+        }
+    }
+    
+    private var offlineHeader: some View {
+        Section {
+            HStack {
+                Image(systemName: "wifi.slash")
+                Text("Offline Mode")
+                Spacer()
+            }
+            .foregroundColor(.secondary)
+            .font(.subheadline)
+            .listRowBackground(Color.clear)
         }
     }
 }
 
 private struct RecentSearchCell: View {
     let definition: WordDefinition
+    let isOnline: Bool
+    @State private var showingRefreshButton = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(definition.word)
-                .font(.headline)
+            HStack {
+                Text(definition.word)
+                    .font(.headline)
+                
+                Spacer()
+                
+                if isOnline && showingRefreshButton {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(.blue)
+                        .imageScale(.small)
+                }
+            }
             
             if let firstMeaning = definition.meanings.first,
                let firstDefinition = firstMeaning.definitions.first {
@@ -52,6 +90,12 @@ private struct RecentSearchCell: View {
             }
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation {
+                showingRefreshButton = hovering && isOnline
+            }
+        }
     }
 }
 
