@@ -5,104 +5,35 @@
 //  Created by Mohamed Salah on 24/02/2025.
 //
 
-import Foundation
 import Network
+import Combine
 
-/// A protocol defining the requirements for a network monitor.
-public protocol NetworkMonitorProtocol: Sendable {
-    /// Indicates whether the network is currently connected.
-    var isConnected: Bool { get }
+@MainActor
+public final class NetworkMonitor: ObservableObject, Sendable {
+    public static let shared = NetworkMonitor()
     
-    /// Waits for the network to become accessible within the specified timeout.
-    ///
-    /// - Parameter timeout: The maximum time to wait for network connectivity, in seconds.
-    /// - Returns: `true` if the network became accessible within the timeout; otherwise, `false`.
-    func waitForConnection(timeout: TimeInterval) async -> Bool
-}
-
-/// An actor that monitors network connectivity status.
-/// It allows multiple concurrent calls to `waitForConnection(timeout:)`
-/// and resumes all waiting tasks when the network status changes.
-public actor NetworkMonitor: NetworkMonitorProtocol {
-    // The NWPathMonitor instance used to monitor network changes.
+    // Marking as private(set) ensures external code only subscribes to changes.
+    @Published public private(set) var isConnected: Bool = true
+    
     private let monitor: NWPathMonitor
-    // An array to keep track of all pending continuations waiting for network availability.
-    private var continuations: [CheckedContinuation<Bool, Never>] = []
+    private let monitorQueue = DispatchQueue(label: "NetworkMonitorQueue")
     
-    /// Initializes a new instance of `NetworkMonitor` and starts monitoring.
-    public init() {
-        self.monitor = NWPathMonitor()
-        // Start monitoring on a background queue.
-        self.monitor.start(queue: DispatchQueue.global(qos: .background))
-        // Set up a single path update handler for all waiting tasks.
-        self.monitor.pathUpdateHandler = { [weak self] path in
-            Task {
-                await self?.handlePathUpdate(status: path.status)
+    private init() {
+        monitor = NWPathMonitor()
+        monitor.pathUpdateHandler = { [weak self] path in
+            // Use a Task to ensure that updates occur on the main actor.
+            Task { @MainActor in
+                let newStatus = (path.status == .satisfied)
+                // Only update if the value has changed.
+                if self?.isConnected != newStatus {
+                    self?.isConnected = newStatus
+                }
             }
         }
-    }
-    
-    /// A nonisolated computed property indicating whether the network is currently connected.
-    nonisolated public var isConnected: Bool {
-        monitor.currentPath.status == .satisfied
-    }
-    
-    /// Waits for the network to become accessible within the specified timeout.
-    ///
-    /// This method allows multiple concurrent calls. Each call will wait until
-    /// the network becomes accessible or the timeout expires.
-    ///
-    /// - Parameter timeout: The maximum time to wait for network connectivity, in seconds.
-    /// - Returns: `true` if the network became accessible within the timeout; otherwise, `false`.
-    public func waitForConnection(timeout: TimeInterval) async -> Bool {
-        if isConnected {
-            // Network is already connected; no need to wait.
-            return true
-        }
-        
-        return await withCheckedContinuation { continuation in
-            // Add the continuation to the array of waiting tasks.
-            self.continuations.append(continuation)
-            
-            // Start a timeout task to handle the case where the network
-            // does not become available within the specified duration.
-            Task {
-                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                await self.handleTimeout()
-            }
-        }
-    }
-    
-    /// Handles network path updates and resumes all waiting continuations if the network becomes accessible.
-    ///
-    /// - Parameter status: The current network path status.
-    private func handlePathUpdate(status: NWPath.Status) async {
-        if status == .satisfied {
-            // Network is now connected.
-            // Resume all waiting continuations with `true`.
-            // It's important to remove continuations after resuming them
-            // to prevent resuming them multiple times and to free up resources.
-            while !continuations.isEmpty {
-                let continuation = continuations.removeFirst()
-                continuation.resume(returning: true)
-            }
-        }
-    }
-    
-    /// Handles timeout by resuming all waiting continuations with `false` if the network did not become accessible in time.
-    private func handleTimeout() async {
-        // Network did not become available within the timeout duration.
-        // Resume all waiting continuations with `false`.
-        // Again, we remove continuations after resuming them to prevent
-        // resuming them multiple times and to free up resources.
-        while !continuations.isEmpty {
-            let continuation = continuations.removeFirst()
-            continuation.resume(returning: false)
-        }
+        monitor.start(queue: monitorQueue)
     }
     
     deinit {
-        // Clean up by cancelling the network monitor when the actor is deallocated.
         monitor.cancel()
     }
 }

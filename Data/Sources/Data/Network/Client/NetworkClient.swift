@@ -9,6 +9,10 @@ import Foundation
 
 // MARK: - Network Client Protocol
 public protocol NetworkClientProtocol: Sendable {
+    /// Performs a network request and decodes the response
+    /// - Parameter config: Configuration for the request
+    /// - Returns: Decoded response of type T
+    /// - Throws: NetworkError if the request fails
     func request<T: Decodable>(_ config: RequestConfigurable) async throws -> T
 }
 
@@ -38,6 +42,10 @@ public final class NetworkClient: NetworkClientProtocol {
         request.allHTTPHeaderFields = config.headers
         request.httpBody = config.bodyData
         
+        // Add a unique request ID for tracking purposes
+        let requestId = UUID().uuidString
+        request.addValue(requestId, forHTTPHeaderField: "X-Request-ID")
+        
         logger.logRequest(request)
         
         do {
@@ -49,8 +57,17 @@ public final class NetworkClient: NetworkClientProtocol {
             }
             
             guard (200...299).contains(httpResponse.statusCode) else {
-                // Could check for 404 => .notFound, etc.
-                throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, data: data)
+                // Map status codes to specific error cases
+                switch httpResponse.statusCode {
+                case 404:
+                    throw NetworkError.notFound
+                case 400...499:
+                    throw NetworkError.clientError(statusCode: httpResponse.statusCode, data: data)
+                case 500...599:
+                    throw NetworkError.serverError(statusCode: httpResponse.statusCode, data: data)
+                default:
+                    throw NetworkError.requestFailed(statusCode: httpResponse.statusCode, data: data)
+                }
             }
             
             let jsonDecoder = config.decoder ?? JSONDecoder()

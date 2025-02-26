@@ -9,231 +9,239 @@ import Foundation
 import Domain
 import SwiftUI
 import Data
+import Combine
 
+/// Manages the word definition state and coordinates between different services
 @MainActor
 public class WordDefinitionViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published public var word: String = "" {
         didSet {
-            // Reset definition when text field is empty
             if word.isEmpty {
                 definition = nil
             }
         }
     }
     @Published public var definition: WordDefinition?
-    @Published public var pastSearches: [WordDefinition] = []
-    @Published public var errorMessage: String?
     @Published public var isLoading: Bool = false
-    @Published public var showErrorAlert: Bool = false
-    @Published public var selectedDetailDefinition: WordDefinition?
     @Published public var showDetailView: Bool = false
-    @Published public var selectedPastSearch: WordDefinition?
-    @Published public var showPastSearchDetail: Bool = false
     @Published public var showPastSearches: Bool = false
-    @Published public var isAudioPlaying: Bool = false
-    @Published public var isOnline: Bool = true
     @Published public var isInitialLoad: Bool = true
-    @Published public var showNetworkStatus: Bool = false
-    
-    private var isFromPastSearch = false
+    @Published public var isAudioPlaying: Bool = false
+    @Published private(set) public var selectedDetailDefinition: WordDefinition?
+
+    // MARK: - Dependencies
     private let fetchDefinitionUseCase: FetchWordDefinitionUseCase
-    private let fetchPastSearchesUseCase: FetchPastSearchesUseCase
-    private let audioService: AudioService
-    private let networkMonitor: NetworkMonitorProtocol
-    private var currentAudioURL: String?
-    private var wasOffline: Bool = false
-    
-    public init(fetchDefinitionUseCase: FetchWordDefinitionUseCase,
-                fetchPastSearchesUseCase: FetchPastSearchesUseCase,
-                audioService: AudioService,
-                networkMonitor: NetworkMonitorProtocol) {
+    private let networkStateManager: NetworkStateManagerProtocol
+    private let audioPlaybackManager: AudioPlaybackManagerProtocol
+    private let pastSearchesManager: PastSearchesManagerProtocol
+    private let errorHandler: ErrorHandlerProtocol
+
+    private var cancellables = Set<AnyCancellable>()
+    private var searchTask: Task<Void, Never>?
+    private var isFromPastSearch = false
+
+    // MARK: - Publishers
+    public var isOnlinePublisher: AnyPublisher<Bool, Never> {
+        networkStateManager.isOnlinePublisher
+    }
+
+    public var pastSearchesPublisher: AnyPublisher<[WordDefinition], Never> {
+        pastSearchesManager.pastSearchDefinitionsPublisher
+    }
+
+    public var errorMessagePublisher: AnyPublisher<String?, Never> {
+        errorHandler.errorMessagePublisher
+    }
+
+    public var showErrorAlertPublisher: AnyPublisher<Bool, Never> {
+        errorHandler.showErrorAlertPublisher
+    }
+
+    // MARK: - Computed Properties
+    public var pastSearches: [WordDefinition] {
+        pastSearchesManager.pastSearchDefinitions
+    }
+
+    public var isOnline: Bool {
+        networkStateManager.isOnline
+    }
+
+    public var showErrorAlert: Bool {
+        get { errorHandler.showErrorAlert }
+        set { if !newValue { errorHandler.resetError() } }
+    }
+
+    public var errorMessage: String? {
+        errorHandler.errorMessage
+    }
+
+    // MARK: - Initialization
+    public init(
+        fetchDefinitionUseCase: FetchWordDefinitionUseCase,
+        networkStateManager: NetworkStateManagerProtocol,
+        audioPlaybackManager: AudioPlaybackManagerProtocol,
+        pastSearchesManager: PastSearchesManagerProtocol,
+        errorHandler: ErrorHandlerProtocol
+    ) {
         self.fetchDefinitionUseCase = fetchDefinitionUseCase
-        self.fetchPastSearchesUseCase = fetchPastSearchesUseCase
-        self.audioService = audioService
-        self.networkMonitor = networkMonitor
-        
-        // Start monitoring network and load initial data
+        self.networkStateManager = networkStateManager
+        self.audioPlaybackManager = audioPlaybackManager
+        self.pastSearchesManager = pastSearchesManager
+        self.errorHandler = errorHandler
+
+        setupSubscriptions()
+
         Task {
-            await setupNetworkMonitoring()
             await loadInitialData()
         }
     }
-    
-    private func setupNetworkMonitoring() async {
-        isOnline = networkMonitor.isConnected
-        
-        // Show past searches by default when offline
-        if !isOnline && isInitialLoad {
-            showPastSearches = true
-            isInitialLoad = false
-        }
-        
-        // Start a Task to monitor network changes
-        Task {
-            while true {
-                let connected = await networkMonitor.waitForConnection(timeout: 1.0)
-                await MainActor.run {
-                    if self.isOnline != connected {
-                        self.isOnline = connected
-                        handleNetworkStatusChange()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func loadInitialData() async {
-        await loadPastSearches()
-        
-        // If offline and we have past searches, show the most recent one
-        if !isOnline && !pastSearches.isEmpty {
-            definition = pastSearches.first
-        }
-    }
-    
-    private func handleNetworkStatusChange() {
-        if isOnline {
-            // Only show online status if we were previously offline
-            if wasOffline {
-                showNetworkStatus = true
-                // Start a task to auto-dismiss the status
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)  // 3 seconds
-                    if !Task.isCancelled {
-                        showNetworkStatus = false
-                    }
-                }
-            }
-            
-            // If we're back online and have a word to search, retry the search
-            if !word.isEmpty {
-                Task {
-                    await search()
-                }
-            }
-            
-            // Hide past searches if they were shown due to being offline
-            if showPastSearches && isInitialLoad {
-                showPastSearches = false
-                isInitialLoad = false
-            }
-            
-            wasOffline = false
-        } else {
-            // Show past searches when going offline
-            showPastSearches = true
-            wasOffline = true
-            showNetworkStatus = false  // Hide online status if it was showing
-        }
-    }
-    
-    public func search() async {
-        let trimmedWord = word.trimmingCharacters(in: .whitespaces)
-        guard !trimmedWord.isEmpty else {
-            definition = nil
-            return
-        }
-        
-        guard trimmedWord.rangeOfCharacter(from: .letters) != nil else {
-            showError("Please enter a valid word")
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        do {
-            let result = try await fetchDefinitionUseCase.execute(for: trimmedWord)
-            definition = result
-            await loadPastSearches()
-            if !isInitialLoad {
-                showPastSearches = false
-            }
-        } catch let error as NetworkError {
-            switch error {
-            case .noInternet:
-                // Show error but don't show past searches if coming from past search selection
-                showError("No internet connection. Showing cached results.")
-                if !isFromPastSearch {
-                    showPastSearches = true
-                }
-            case .invalidResponse:
-                showError("Word not found")
-                if !isFromPastSearch {
-                    showPastSearches = true
-                }
-            default:
-                showError(error.localizedDescription)
-                if !isFromPastSearch {
-                    showPastSearches = true
-                }
-            }
-        } catch {
-            showError(error.localizedDescription)
-            if !isFromPastSearch {
-                showPastSearches = true
-            }
-        }
-        isLoading = false
-        isFromPastSearch = false  // Reset the flag after search completes
-    }
-    
-    
-    public func loadPastSearches() async {
-        do {
-            pastSearches = try await fetchPastSearchesUseCase.execute()
-        } catch {
-            showError("Unable to load past searches")
-        }
-    }
-    
-    public func selectPastSearch(_ definition: WordDefinition) {
-        showPastSearches = false
-        self.word = definition.word
-        isFromPastSearch = true  // Set flag before searching
-        Task {
-            await search()
-        }
-    }
-    
-    public func showDefinitionDetail(_ definition: WordDefinition) {
-        self.selectedDetailDefinition = definition
-        self.showDetailView = true
-    }
-    
-    public func showPastSearchDetails(_ definition: WordDefinition) {
-        selectedPastSearch = definition
-        showPastSearchDetail = true
-    }
-    
-    public func playAudio(from url: String) {
-        if isAudioPlaying && currentAudioURL == url {
-            stopAudio()
-        } else {
-            currentAudioURL = url
-            isAudioPlaying = true
-            audioService.play(from: url)
-        }
-    }
-    
-    public func stopAudio() {
-        isAudioPlaying = false
-        currentAudioURL = nil
-        audioService.stop()
-    }
-    
-    public func dismissNetworkStatus() {
-        showNetworkStatus = false
-    }
-    
-    private func showError(_ message: String) {
-        errorMessage = message
-        showErrorAlert = true
-    }
-}
 
-enum NetworkError: Error {
-    case noInternet
-    case serverError
-    case invalidResponse
+    deinit {
+        searchTask?.cancel()
+    }
+
+    private func setupSubscriptions() {
+        // Observe network state changes
+        networkStateManager.isOnlinePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isOnline in
+                guard let self = self else { return }
+                self.handleNetworkStateChange(isOnline: isOnline)
+            }
+            .store(in: &cancellables)
+
+        // Observe past searches changes
+        pastSearchesManager.pastSearchDefinitionsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // Observe audio playback state
+        audioPlaybackManager.isPlayingPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isPlaying in
+                self?.isAudioPlaying = isPlaying
+            }
+            .store(in: &cancellables)
+    }
+
+    private func loadInitialData() async {
+        await pastSearchesManager.loadPastSearches()
+
+        if !isOnline, let recentSearch = await pastSearchesManager.getMostRecentSearch() {
+            definition = recentSearch
+            showPastSearches = true
+        }
+
+        isInitialLoad = false
+    }
+
+    // MARK: - Public Methods
+    public func search() async {
+        // Cancel any existing search task
+        searchTask?.cancel()
+
+        let trimmedWord = word.trimmingCharacters(in: .whitespaces)
+        guard validateSearchInput(trimmedWord) else { return }
+
+        isLoading = true
+
+        // Create a new search task
+        searchTask = Task { [weak self] in
+            guard let self = self else { return }
+
+            do {
+                let result = try await fetchDefinitionUseCase.execute(for: trimmedWord)
+
+                // Check if the task was cancelled
+                if Task.isCancelled { return }
+
+                await MainActor.run {
+                    self.definition = result
+                    if !self.isInitialLoad {
+                        self.showPastSearches = false
+                    }
+                }
+
+                await self.pastSearchesManager.loadPastSearches()
+            } catch {
+                if !Task.isCancelled {
+                    self.errorHandler.handleRepositoryError(error, for: trimmedWord)
+                    if !self.isFromPastSearch {
+                        self.showPastSearches = true
+                    }
+                }
+            }
+
+            await MainActor.run {
+                self.isLoading = false
+                self.isFromPastSearch = false
+            }
+        }
+    }
+
+    public func selectPastSearch(_ definition: WordDefinition) {
+        self.word = definition.word
+        isFromPastSearch = true
+        
+        // If we're online, fetch fresh data
+        if isOnline {
+            Task {
+                await search()
+            }
+        } else {
+            // If offline, use the cached definition
+            self.definition = definition
+        }
+        showPastSearches = false
+    }
+
+    public func showDefinitionDetail(_ definition: WordDefinition) {
+        selectedDetailDefinition = definition
+    }
+
+    public func dismissDetailView() {
+        selectedDetailDefinition = nil
+    }
+
+    public func playAudio(from url: String) {
+        guard isOnline else {
+            errorHandler.showError("Cannot play audio while offline")
+            return
+        }
+        audioPlaybackManager.playAudio(from: url)
+    }
+
+    public func stopAudio() {
+        audioPlaybackManager.stopAudio()
+    }
+
+    // MARK: - Private Methods
+    private func validateSearchInput(_ word: String) -> Bool {
+        guard !word.isEmpty else {
+            definition = nil
+            errorHandler.showError("Please enter a valid word")
+            return false
+        }
+
+        guard word.rangeOfCharacter(from: .letters) != nil else {
+            errorHandler.showError("Please enter a valid word")
+            return false
+        }
+
+        return true
+    }
+
+    private func handleNetworkStateChange(isOnline: Bool) {
+        if isOnline {
+            if !word.isEmpty {
+                Task { await search() }
+            }
+        } else {
+            showPastSearches = true
+        }
+    }
 }

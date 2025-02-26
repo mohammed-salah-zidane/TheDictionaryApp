@@ -12,26 +12,13 @@ import WordFeature
 
 @main
 struct TheDictionaryApp: App {
-    // Initialize the audio service at app level to maintain a single instance
-    private let audioService: AudioService = AudioServiceImpl()
+    // Use the dependency injection manager to access services
+    private let dependencyManager = DependencyInjectionManager.shared
     
     var body: some Scene {
         WindowGroup {
-            // Compose dependencies.
-            let repository = WordDefinitionRepositoryImpl()
-            let fetchWordDefinitionUseCase = DefaultFetchWordDefinitionUseCase(
-                repository: repository
-            )
-            let pastSearchesUseCase = DefaultFetchPastSearchesUseCase(
-                repository: repository
-            )
-            
-            let viewModel = WordDefinitionViewModel(
-                fetchDefinitionUseCase: fetchWordDefinitionUseCase,
-                fetchPastSearchesUseCase: pastSearchesUseCase,
-                audioService: audioService, networkMonitor: NetworkMonitor()
-            )
-            WordSearchView(viewModel: viewModel)
+            // Use the factory method to create the ViewModel with all required dependencies
+            WordSearchView(viewModel: dependencyManager.makeWordDefinitionViewModel())
         }
     }
 }

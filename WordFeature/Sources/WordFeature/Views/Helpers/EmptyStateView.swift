@@ -2,6 +2,12 @@ import SwiftUI
 
 struct EmptyStateView: View {
     let isOnline: Bool
+    let onRecentSearchesTapped: (() -> Void)?
+    
+    init(isOnline: Bool, onRecentSearchesTapped: (() -> Void)? = nil) {
+        self.isOnline = isOnline
+        self.onRecentSearchesTapped = onRecentSearchesTapped
+    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -23,7 +29,9 @@ struct EmptyStateView: View {
                 .padding(.horizontal, 32)
             
             if !isOnline {
-                Button(action: {}) {
+                Button(action: {
+                    onRecentSearchesTapped?()
+                }) {
                     Label("Check Recent Searches", systemImage: "clock.arrow.circlepath")
                 }
                 .buttonStyle(.bordered)
