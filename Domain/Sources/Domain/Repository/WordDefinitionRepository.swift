@@ -10,6 +10,11 @@ import Foundation
 /// Protocol defining the boundary between domain and data layers for dictionary operations.
 /// This follows the Repository pattern to abstract the data source implementation details.
 public protocol WordDefinitionRepository: Sendable {
+    
+    var remoteDataSource: RemoteDataSourceProtocol { get }
+    
+    var localDataSource: LocalDataSourceProtocol { get }
+    
     /// Fetches a word definition from either local cache or remote API
     /// - Parameter word: The word to look up
     /// - Returns: The complete word definition

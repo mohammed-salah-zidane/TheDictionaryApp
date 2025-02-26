@@ -11,8 +11,8 @@ import Domain
 /// Implementation of the WordDefinitionRepository protocol that orchestrates
 /// data fetching from remote and local sources with proper caching.
 public final class WordDefinitionRepositoryImpl: WordDefinitionRepository {
-    private let remoteDataSource: RemoteDataSourceProtocol
-    private let localDataSource: LocalDataSourceProtocol
+    public let remoteDataSource: RemoteDataSourceProtocol
+    public let localDataSource: LocalDataSourceProtocol
     
     public init(
         remoteDataSource: RemoteDataSourceProtocol = RemoteDataSource(),
