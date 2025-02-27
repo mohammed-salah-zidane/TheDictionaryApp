@@ -17,7 +17,6 @@ struct TheDictionaryApp: App {
     
     var body: some Scene {
         WindowGroup {
-            // Use the factory method to create the ViewModel with all required dependencies
             WordSearchView(viewModel: dependencyManager.makeWordDefinitionViewModel())
         }
     }

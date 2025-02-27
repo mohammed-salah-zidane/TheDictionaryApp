@@ -237,6 +237,7 @@ public class WordDefinitionViewModel: ObservableObject {
 
     private func handleNetworkStateChange(isOnline: Bool) {
         if isOnline {
+            errorHandler.resetError()
             if !word.isEmpty {
                 Task { await search() }
             }
